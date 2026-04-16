@@ -22,12 +22,11 @@ def save_db(db: dict) -> None:
     DB_PATH.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def publish(channel, event_type: str, target: str, payload: dict, correlation_id: str) -> None:
-    encrypted_payload = encrypt_for_target(payload, target)
+def publish(channel, event_type: str, payload: dict, correlation_id: str) -> None:
+    encrypted_payload = encrypt_for_target(payload, source_component=COMPONENT)
     envelope = build_envelope(
         event_type=event_type,
         origin=COMPONENT,
-        target=target,
         encrypted_payload=encrypted_payload,
         correlation_id=correlation_id,
     )
@@ -43,7 +42,7 @@ def handle(channel, body: bytes) -> None:
     event_type = envelope["event_type"]
     correlation_id = envelope["correlation_id"]
 
-    payload = decrypt_for_component(envelope["encrypted_payload"], COMPONENT)
+    payload = decrypt_for_component(envelope["encrypted_payload"], envelope["origin"])
     db = load_db()
 
     if event_type == "comando.promocao.registrar":
@@ -59,7 +58,6 @@ def handle(channel, body: bytes) -> None:
         publish(
             channel,
             event_type="retorno.promocao.registro",
-            target="gateway",
             payload={"status": "ok", "promocao": promo},
             correlation_id=correlation_id,
         )
@@ -67,7 +65,6 @@ def handle(channel, body: bytes) -> None:
         publish(
             channel,
             event_type=f"evento.promocao.criada.{promo['categoria']}",
-            target="ms-notificacao",
             payload={"promocao": promo},
             correlation_id=correlation_id,
         )
@@ -76,7 +73,6 @@ def handle(channel, body: bytes) -> None:
         publish(
             channel,
             event_type="retorno.promocao.lista",
-            target="gateway",
             payload={"promocoes": db["promocoes"]},
             correlation_id=correlation_id,
         )

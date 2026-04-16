@@ -6,7 +6,7 @@ Projeto de demonstração de arquitetura orientada a eventos com RabbitMQ usando
 
 - Demonstrar comunicação assíncrona entre microsserviços.
 - Usar roteamento por tópicos (topic exchange) para separar eventos e comandos.
-- Aplicar criptografia RSA entre gateway e serviços de backend.
+- Aplicar assinatura digital RSA-PSS entre gateway e serviços de backend.
 - Simular preferências de usuários diretamente no binding do exchange.
 
 ## Arquitetura
@@ -55,24 +55,42 @@ Para alterar preferências manualmente, edite os queue_bind de ms-cliente-1 e ms
 
 ## Segurança das mensagens
 
-- Gateway, ms-promocao, ms-notificacao e ms-ranking possuem par de chaves RSA.
-- ms-cliente-1 e ms-cliente-2 nao usam criptografia e nao possuem par de chaves.
-- Chaves privadas ficam em:
-  - gateway/keys/private.pem
-	- services/ms-promocao/keys/private.pem
-	- services/ms-notificacao/keys/private.pem
-	- services/ms-ranking/keys/private.pem
-- Chaves públicas ficam em:
-	- core/security/keys/gateway_public.pem
-	- core/security/keys/ms-promocao_public.pem
-	- core/security/keys/ms-notificacao_public.pem
-	- core/security/keys/ms-ranking_public.pem
-- Mensagens de alerta para os clientes sao enviadas em payload puro (sem encrypted_payload).
+Modelo de assinatura digital RSA-PSS (sign & verify):
+
+- O componente de origem assina o payload com sua chave privada (`encrypt_for_target`).
+- O componente receptor verifica a assinatura usando a chave pública do remetente (`decrypt_for_component`).
+- Isso garante autenticidade e integridade: o receptor confirma que a mensagem veio do remetente esperado e nao foi alterada.
+- Se a assinatura for inválida, `InvalidSignature` é lançado.
+
+Formato do bundle assinado (campo `encrypted_payload` do envelope):
+
+- Base64 de um JSON com dois campos:
+  - `payload`: conteúdo original em base64.
+  - `signature`: assinatura RSA-PSS/SHA-256 em base64.
+
+Componentes com chaves RSA: gateway, ms-promocao, ms-notificacao, ms-ranking.
+ms-cliente-1 e ms-cliente-2 nao usam criptografia e nao possuem par de chaves.
+
+Chaves privadas (usadas para assinar):
+
+- gateway/keys/private.pem
+- services/ms-promocao/keys/private.pem
+- services/ms-notificacao/keys/private.pem
+- services/ms-ranking/keys/private.pem
+
+Chaves públicas (usadas para verificar assinatura):
+
+- core/security/keys/gateway_public.pem
+- core/security/keys/ms-promocao_public.pem
+- core/security/keys/ms-notificacao_public.pem
+- core/security/keys/ms-ranking_public.pem
+
+Mensagens de alerta para os clientes sao enviadas em payload puro (sem encrypted_payload).
 
 Scripts relevantes:
 
 - scripts/generate_keys.py: gera os pares de chaves.
-- core/security/crypto_utils.py: utilitários de envelope e criptografia.
+- core/security/crypto_utils.py: assinatura, verificação e montagem de envelope.
 
 ## Requisitos
 
@@ -147,3 +165,9 @@ No painel, confira exchange, filas e bindings para validar o roteamento por cate
 - gateway: interface de terminal e chave privada do gateway.
 - services: workers de cada microsserviço.
 - scripts: automação de bootstrap e geração de chaves.
+
+## Run concurrently
+
+```sh
+$ concurrently 'python services/ms-promocao/worker.py' 'python services/ms-notificacao/worker.py' 'python services/ms-ranking/worker.py' 'python services/ms-cliente-1/worker.py' 'python services/ms-cliente-2/worker.py' 'python gateway/terminal.py'
+```

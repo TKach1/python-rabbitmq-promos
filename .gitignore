@@ -6,3 +6,6 @@ __pycache__/
 */keys/private.pem
 services/*/db.json
 services/*/db_cliente.json
+
+# Private and public keys
+*.pem

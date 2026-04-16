@@ -22,12 +22,11 @@ def save_db(db: dict) -> None:
     DB_PATH.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def publish(channel, event_type: str, target: str, payload: dict, correlation_id: str) -> None:
-    encrypted_payload = encrypt_for_target(payload, target)
+def publish(channel, event_type: str, payload: dict, correlation_id: str) -> None:
+    encrypted_payload = encrypt_for_target(payload, source_component=COMPONENT)
     envelope = build_envelope(
         event_type=event_type,
         origin=COMPONENT,
-        target=target,
         encrypted_payload=encrypted_payload,
         correlation_id=correlation_id,
     )
@@ -42,7 +41,7 @@ def handle(channel, body: bytes) -> None:
     envelope = json.loads(body.decode("utf-8"))
     event_type = envelope["event_type"]
     correlation_id = envelope["correlation_id"]
-    payload = decrypt_for_component(envelope["encrypted_payload"], COMPONENT)
+    payload = decrypt_for_component(envelope["encrypted_payload"], envelope["origin"])
 
     if event_type != "comando.ranking.pontuar":
         return
@@ -56,7 +55,6 @@ def handle(channel, body: bytes) -> None:
     publish(
         channel,
         event_type="retorno.ranking.pontuacao",
-        target="gateway",
         payload={"promocao_id": promo_id, "pontuacao": db["scores"][promo_id], "ranking": ranking},
         correlation_id=correlation_id,
     )

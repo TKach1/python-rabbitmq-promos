@@ -22,12 +22,11 @@ def save_db(db: dict) -> None:
     DB_PATH.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def publish(channel, event_type: str, target: str, payload: dict, correlation_id: str) -> None:
+def publish(channel, event_type: str, payload: dict, correlation_id: str) -> None:
     envelope = build_envelope(
         event_type=event_type,
         origin=COMPONENT,
-        target=target,
-        encrypted_payload="",
+        encrypted_payload="", # para clientes, nao envia com payload criptografado, pois nao tem segredo compartilhado. O payload vai no campo "payload" do envelope.
         correlation_id=correlation_id,
     )
     envelope["payload"] = payload
@@ -43,7 +42,7 @@ def handle(channel, body: bytes) -> None:
     event_type = envelope["event_type"]
     correlation_id = envelope["correlation_id"]
 
-    payload = decrypt_for_component(envelope["encrypted_payload"], COMPONENT)
+    payload = decrypt_for_component(envelope["encrypted_payload"], envelope["origin"])
 
     if event_type.startswith("evento.promocao.criada."):
         promo = payload["promocao"]
@@ -57,7 +56,6 @@ def handle(channel, body: bytes) -> None:
         publish(
             channel,
             event_type=f"evento.alerta.enviar.{categoria}",
-            target="ms-cliente",
             payload=alerta,
             correlation_id=correlation_id,
         )
