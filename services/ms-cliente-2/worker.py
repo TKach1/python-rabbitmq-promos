@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from core.amqp.connection import get_connection
 from core.amqp.exchange_setup import QUEUE_NAMES, setup_topology
-
+from core.security.crypto_utils import decrypt_for_component
 
 COMPONENT = "ms-cliente-2"
 DB_PATH = Path(__file__).resolve().parent / "db.json"
@@ -25,7 +25,8 @@ def handle(body: bytes) -> None:
     envelope = json.loads(body.decode("utf-8"))
     event_type = envelope["event_type"]
     if event_type.startswith("evento.alerta.enviar."):
-        payload = envelope.get("payload", {})
+        verified_payload = decrypt_for_component(envelope["payload"], envelope["origin"])
+        payload = verified_payload
         db = load_db()
         db["alerts"].append(payload)
         save_db(db)

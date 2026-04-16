@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from core.amqp.connection import get_connection
 from core.amqp.exchange_setup import EXCHANGE_NAME, QUEUE_NAMES, setup_topology
-from core.security.crypto_utils import build_envelope, decrypt_for_component
+from core.security.crypto_utils import build_envelope, decrypt_for_component, encrypt_for_target
 
 
 COMPONENT = "ms-notificacao"
@@ -23,13 +23,14 @@ def save_db(db: dict) -> None:
 
 
 def publish(channel, event_type: str, payload: dict, correlation_id: str) -> None:
+    encrypted_payload = encrypt_for_target(payload, source_component=COMPONENT)
     envelope = build_envelope(
         event_type=event_type,
         origin=COMPONENT,
-        encrypted_payload="", # para clientes, nao envia com payload criptografado, pois nao tem segredo compartilhado. O payload vai no campo "payload" do envelope.
+        encrypted_payload="",
         correlation_id=correlation_id,
     )
-    envelope["payload"] = payload
+    envelope["payload"] = encrypted_payload
     channel.basic_publish(
         exchange=EXCHANGE_NAME,
         routing_key=event_type,
