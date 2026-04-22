@@ -18,6 +18,12 @@ def load_db() -> dict:
     return json.loads(DB_PATH.read_text(encoding="utf-8"))
 
 
+def load_external_db(component: str) -> dict:
+    path = Path(__file__).resolve().parents[1] / component / "db.json"
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
 def save_db(db: dict) -> None:
     DB_PATH.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -57,6 +63,16 @@ def handle(channel, body: bytes) -> None:
         event_type="retorno.ranking.pontuacao",
         payload={"promocao_id": promo_id, "pontuacao": db["scores"][promo_id], "ranking": ranking},
         correlation_id=correlation_id,
+    )
+    promocao_db = load_external_db("ms-promocao")
+    promocoes = promocao_db.get("promocoes", [])
+    promo = next((p for p in promocoes if p.get("id") == promo_id), {})
+    category = promo.get("categoria", "desconhecida")
+    publish(
+        channel,
+        event_type=f"evento.alerta.hot.{category}",
+        payload={"promocao": {"id": promo_id, "ranking": db["scores"][promo_id], "categoria": category}},
+        correlation_id=correlation_id
     )
 
 

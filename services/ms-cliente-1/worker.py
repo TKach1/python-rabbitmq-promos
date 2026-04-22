@@ -33,6 +33,13 @@ def handle(body: bytes) -> None:
         db["alerts"].append(payload)
         save_db(db)
         print(f"[ALERTA] {payload.get('mensagem', 'alerta sem mensagem')}")
+    elif event_type.startswith("evento.alerta.hot."):
+        verified_payload = decrypt_for_component(envelope["payload"], envelope["origin"])
+        payload = verified_payload
+        db = load_db()
+        db["alerts"].append(payload)
+        save_db(db)
+        print(f"[HOT DEAL] {payload.get('mensagem', 'hot deal sem mensagem')}")
 
 
 def main() -> None:

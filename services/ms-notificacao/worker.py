@@ -60,6 +60,22 @@ def handle(channel, body: bytes) -> None:
             payload=alerta,
             correlation_id=correlation_id,
         )
+        
+    elif event_type.startswith("evento.alerta.hot."):
+        promo = payload["promocao"]
+        categoria = promo["categoria"]
+        
+        alerta = {
+            "mensagem": f"Nova promocao em {categoria}: {promo['id']} com ranking {promo['ranking']}",
+            "promocao": promo,
+        }
+        print(f"Enviando alerta de HOT DEAL! para clientes interessados em {categoria}...")
+        publish(
+            channel,
+            event_type=f"evento.alerta.enviar.{categoria}",
+            payload=alerta,
+            correlation_id=correlation_id,
+        )
 
 
 def main() -> None:

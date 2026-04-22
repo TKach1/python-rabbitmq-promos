@@ -34,6 +34,11 @@ def setup_topology(channel) -> None:
         queue=QUEUE_NAMES["ms-notificacao"],
         routing_key="evento.promocao.criada.*",
     )
+    channel.queue_bind(
+        exchange=EXCHANGE_NAME,
+        queue=QUEUE_NAMES["ms-notificacao"],
+        routing_key="evento.alerta.hot.*",
+    )
 
     channel.queue_declare(queue=QUEUE_NAMES["ms-ranking"], durable=True)
     channel.queue_bind(
