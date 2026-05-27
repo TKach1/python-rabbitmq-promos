@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente</title>
+</head>
+<body>
+    <h1>Cliente</h1>
+    <h2>O cliente terá as seguintes funções:</h2>
+    <p>Consultar promoções públicadas</p>
+    <p>Votar positivamente ou Negativamente</p>
+    <p>Registrar interesse em categorias de produtos</p>
+    <p>Cancelar interesse em categorias</p>
+    <p>Receber notificações em tempo real sobre promoções de interesse</p>
+    
+<button onclick="listarPromocoes()">Listar Promoções</button>
+
+<button onclick="registrarPromocao('promo-1', 'Desconto 50%', 'Eletrônicos', 99.99)">
+    Registrar Promoção
+</button>
+
+
+<button onclick="curtirPromocao('promo-1')">Curtir Promoção</button>
+
+    <script src = "script.js"></script>
+</body>
+</html>
