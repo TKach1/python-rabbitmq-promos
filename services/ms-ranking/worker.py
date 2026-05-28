@@ -53,27 +53,33 @@ def handle(channel, body: bytes) -> None:
         return
 
     promo_id = payload["promocao_id"]
+    delta = int(payload.get("delta", 1))
     db = load_db()
-    db["scores"][promo_id] = db["scores"].get(promo_id, 0) + 1
+    old_score = db["scores"].get(promo_id, 0)
+    new_score = old_score + delta
+    db["scores"][promo_id] = new_score
     save_db(db)
 
     ranking = sorted(db["scores"].items(), key=lambda item: item[1], reverse=True)
     publish(
         channel,
         event_type="retorno.ranking.pontuacao",
-        payload={"promocao_id": promo_id, "pontuacao": db["scores"][promo_id], "ranking": ranking},
+        payload={"promocao_id": promo_id, "pontuacao": new_score, "ranking": ranking},
         correlation_id=correlation_id,
     )
-    promocao_db = load_external_db("ms-promocao")
-    promocoes = promocao_db.get("promocoes", [])
-    promo = next((p for p in promocoes if p.get("id") == promo_id), {})
-    category = promo.get("categoria", "desconhecida")
-    publish(
-        channel,
-        event_type=f"evento.alerta.hot.{category}",
-        payload={"promocao": {"id": promo_id, "ranking": db["scores"][promo_id], "categoria": category}},
-        correlation_id=correlation_id
-    )
+
+    HOT_THRESHOLD = 5
+    if old_score < HOT_THRESHOLD <= new_score:
+        promocao_db = load_external_db("ms-promocao")
+        promocoes = promocao_db.get("promocoes", [])
+        promo = next((p for p in promocoes if p.get("id") == promo_id), {})
+        category = promo.get("categoria", "desconhecida")
+        publish(
+            channel,
+            event_type=f"evento.alerta.hot.{category}",
+            payload={"promocao": {"id": promo_id, "ranking": new_score, "categoria": category}},
+            correlation_id=correlation_id,
+        )
 
 
 def main() -> None:

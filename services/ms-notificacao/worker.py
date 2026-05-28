@@ -14,7 +14,7 @@ DB_PATH = Path(__file__).resolve().parent / "db.json"
 
 def load_db() -> dict:
     if not DB_PATH.exists():
-        return {"subscriptions": {}}
+        return {"subscriptions": {}, "interesses": {}}
     return json.loads(DB_PATH.read_text(encoding="utf-8"))
 
 
@@ -44,6 +44,7 @@ def handle(channel, body: bytes) -> None:
     correlation_id = envelope["correlation_id"]
 
     payload = decrypt_for_component(envelope["encrypted_payload"], envelope["origin"])
+    db = load_db()
 
     if event_type.startswith("evento.promocao.criada."):
         promo = payload["promocao"]
@@ -76,6 +77,28 @@ def handle(channel, body: bytes) -> None:
             payload=alerta,
             correlation_id=correlation_id,
         )
+    
+    elif event_type == "comando.interesse.registrar":
+        usuario_id = payload.get("usuario_id")
+        categoria = payload.get("categoria")
+        if usuario_id and categoria:
+            if usuario_id not in db["interesses"]:
+                db["interesses"][usuario_id] = []
+            if categoria not in db["interesses"][usuario_id]:
+                db["interesses"][usuario_id].append(categoria)
+            save_db(db)
+            print(f"Interesse registrado: {usuario_id} -> {categoria}")
+    
+    elif event_type == "comando.interesse.cancelar":
+        usuario_id = payload.get("usuario_id")
+        categoria = payload.get("categoria")
+        if usuario_id and categoria:
+            if usuario_id in db["interesses"] and categoria in db["interesses"][usuario_id]:
+                db["interesses"][usuario_id].remove(categoria)
+                if not db["interesses"][usuario_id]:
+                    del db["interesses"][usuario_id]
+                save_db(db)
+                print(f"Interesse cancelado: {usuario_id} -> {categoria}")
 
 
 def main() -> None:

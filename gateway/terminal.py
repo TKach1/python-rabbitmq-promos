@@ -3,7 +3,7 @@ import time
 import uuid
 import sys
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from fastapi.middleware.cors import CORSMiddleware
 from core.amqp.connection import get_connection
@@ -106,16 +106,50 @@ async def registrar_promocao(body: dict):
     return {"event_type": event_type, "payload": payload}
 
 
-@app.post("/curtir_promocao")
-async def curtir_promocao(body: dict):
+@app.post("/votar_promocao")
+async def votar_promocao(body: dict):
     promo_id = body.get("promocao_id")
+    positivo = body.get("positivo", True)
+    if not promo_id:
+        raise HTTPException(status_code=400, detail="promocao_id é obrigatório")
+    delta = 1 if positivo else -1
     corr = publish_command(
         channel,
         event_type="comando.ranking.pontuar",
-        payload={"promocao_id": promo_id},
+        payload={"promocao_id": promo_id, "delta": delta},
     )
     event_type, payload = wait_response(channel, corr)
     return {"event_type": event_type, "payload": payload}
+
+
+@app.post("/interesse/categoria")
+async def registrar_interesse_categoria(body: dict):
+    usuario_id = body.get("usuario_id")
+    categoria = body.get("categoria")
+    if not usuario_id or not categoria:
+        raise HTTPException(status_code=400, detail="usuario_id e categoria são obrigatórios")
+
+    publish_command(
+        channel,
+        event_type="comando.interesse.registrar",
+        payload={"usuario_id": usuario_id, "categoria": categoria},
+    )
+    return {"status": "ok", "usuario_id": usuario_id, "categoria": categoria}
+
+
+@app.delete("/interesse/categoria")
+async def cancelar_interesse_categoria(body: dict):
+    usuario_id = body.get("usuario_id")
+    categoria = body.get("categoria")
+    if not usuario_id or not categoria:
+        raise HTTPException(status_code=400, detail="usuario_id e categoria são obrigatórios")
+
+    publish_command(
+        channel,
+        event_type="comando.interesse.cancelar",
+        payload={"usuario_id": usuario_id, "categoria": categoria},
+    )
+    return {"status": "ok", "usuario_id": usuario_id, "categoria": categoria}
 
 
 if __name__ == "__main__":

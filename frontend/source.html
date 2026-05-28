@@ -1,28 +1,173 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cliente</title>
+    <title>Cliente - Sistema de Promoções</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        section {
+            background-color: #f9f9f9;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        input, select {
+            padding: 8px 12px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        #output {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            overflow-x: auto;
+        }
+        
+        #output pre {
+            font-size: 12px;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Cliente</h1>
-    <h2>O cliente terá as seguintes funções:</h2>
-    <p>Consultar promoções públicadas</p>
-    <p>Votar positivamente ou Negativamente</p>
-    <p>Registrar interesse em categorias de produtos</p>
-    <p>Cancelar interesse em categorias</p>
-    <p>Receber notificações em tempo real sobre promoções de interesse</p>
-    
-<button onclick="listarPromocoes()">Listar Promoções</button>
+    <div class="container">
+        <h1>🎉 Sistema de Promoções - Cliente</h1>
+        <p class="info-text">Funcionalidades do cliente: consultar promoções, votar, registrar interesses e receber notificações em tempo real.</p>
 
-<button onclick="registrarPromocao('promo-1', 'Desconto 50%', 'Eletrônicos', 99.99)">
-    Registrar Promoção
-</button>
+        <h2>1. Listar Promoções</h2>
+        <section>
+            <p class="info-text">Visualize todas as promoções disponíveis no sistema.</p>
+            <button id="btnListar">📋 Listar Promoções</button>
+        </section>
 
+        <h2>2. Registrar Promoção (Loja)</h2>
+        <section>
+            <p class="info-text">Registre uma nova promoção no sistema.</p>
+            <label>ID da Promoção
+                <input type="text" id="inputPromoId" placeholder="ex: promo-1">
+            </label>
+            <label>Título
+                <input type="text" id="inputPromoTitulo" placeholder="ex: Desconto 50%">
+            </label>
+            <label>Categoria
+                <input type="text" id="inputPromoCategoria" placeholder="ex: Eletrônicos">
+            </label>
+            <label>Preço
+                <input type="number" id="inputPromoPreco" placeholder="99.99" step="0.01" min="0">
+            </label>
+            <button id="btnRegistrar">✅ Registrar Promoção</button>
+        </section>
 
-<button onclick="curtirPromocao('promo-1')">Curtir Promoção</button>
+        <h2>3. Votar em Promoção</h2>
+        <section>
+            <p class="info-text">Vote positiva ou negativamente em uma promoção para ajudar no ranking.</p>
+            <label>ID da Promoção
+                <input type="text" id="inputVotoPromoId" placeholder="ex: promo-1">
+            </label>
+            <label>Seu Voto
+                <select id="selectVoto">
+                    <option value="true">👍 Positivo</option>
+                    <option value="false">👎 Negativo</option>
+                </select>
+            </label>
+            <button id="btnVotar">🗳️ Enviar Voto</button>
+        </section>
 
-    <script src = "script.js"></script>
+        <h2>4. Registrar / Cancelar Interesse por Categoria</h2>
+        <section>
+            <p class="info-text">Registre seu interesse em categorias para receber notificações sobre novas promoções.</p>
+            <label>ID do Usuário
+                <input type="text" id="inputUsuarioId" placeholder="ex: cliente123">
+            </label>
+            <label>Categoria
+                <input type="text" id="inputCategoria" placeholder="ex: Eletrônicos">
+            </label>
+            <button id="btnRegistrarInteresse">➕ Registrar Interesse</button>
+            <button id="btnCancelarInteresse">➖ Cancelar Interesse</button>
+        </section>
+
+        <h2>📊 Resposta da API</h2>
+        <section>
+            <div id="output">Nenhuma ação executada ainda.</div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
