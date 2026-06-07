@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliente - PromoShop</title>
+    <style>
+        body{font-family:Arial, sans-serif;background:#f5f5f5;padding:20px}
+        .container{max-width:1200px;margin:0 auto;background:#fff;padding:24px;border-radius:8px}
+        label{display:block;margin-bottom:10px;font-weight:700}
+        input,select{padding:8px;border:1px solid #ddd;border-radius:6px}
+        button{padding:8px 12px;background:#007bff;color:#fff;border:none;border-radius:6px}
+        .promo-card{background:#fff;border:1px solid #eee;border-radius:8px;padding:12px}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h1>Cliente — PromoShop</h1>
+            <div><a href="loja.html">Abrir loja</a></div>
+        </div>
+
+        <section>
+            <button id="btnListar">📋 Listar Promoções</button>
+            <input id="searchInput" placeholder="Buscar título ou id..." style="margin-left:8px">
+            <select id="categoryFilter" style="margin-left:8px"><option value="">Todas as categorias</option></select>
+            <div id="promotionsList" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+        </section>
+
+        <section style="margin-top:16px">
+            <p>O cliente é identificado automaticamente pela sessão aberta no navegador.</p>
+            <label>Categoria
+                <input id="inputCategoria" placeholder="ex: Eletrônicos">
+            </label>
+            <button id="btnRegistrarInteresse">➕ Registrar Interesse</button>
+            <button id="btnCancelarInteresse">➖ Cancelar Interesse</button>
+        </section>
+
+        <section style="margin-top:16px">
+            <h3>Notificações</h3>
+            <div id="notifications">Nenhuma notificação ainda.</div>
+        </section>
+    </div>
+
+    <script src="cliente.js"></script>
+</body>
+</html>

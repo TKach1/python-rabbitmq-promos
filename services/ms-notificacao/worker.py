@@ -72,7 +72,7 @@ def handle(channel, body: bytes) -> None:
         }
         print(f"Enviando alerta de HOT DEAL! para a loja, categoria: {categoria}...")
 
-        html = f"<p>Sua promoção <strong>em {categoria} id: {promo.get('id')}</strong>! se tornou HOT DEAL!</p>"
+        html = f"<p>Sua promoção <strong>Categoria: {categoria} ID: {promo.get('id')}</strong>! se tornou HOT DEAL!</p>"
         r = resend.Emails.send({
             "from": "onboarding@resend.dev",
             "to": "williamrodrigues4224@gmail.com",
