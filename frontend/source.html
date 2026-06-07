@@ -103,17 +103,73 @@
             font-size: 14px;
             margin-bottom: 15px;
         }
+
+        /* Ecommerce theme */
+        .site-header {
+            display:flex;
+            align-items:center;
+            gap:16px;
+            margin-bottom:20px;
+        }
+        .logo {
+            font-size:22px;
+            font-weight:800;
+            color:#007bff;
+        }
+        .search-bar {
+            flex:1;
+            display:flex;
+            gap:8px;
+        }
+        .search-bar input { flex:1; padding:10px 12px; border-radius:6px; border:1px solid #ddd; }
+
+        #promotionsList { margin-top:8px; }
+        .promo-card {
+            background:white;
+            border:1px solid #eee;
+            border-radius:8px;
+            padding:12px;
+            display:flex;
+            flex-direction:column;
+            transition:box-shadow .15s ease, transform .08s ease;
+        }
+        .promo-card:hover { box-shadow:0 6px 18px rgba(0,0,0,0.08); transform:translateY(-4px); }
+        .promo-image { height:140px; background:linear-gradient(135deg,#f3f6fb,#fff); border-radius:6px; display:flex;align-items:center;justify-content:center;color:#999;margin-bottom:10px }
+        .promo-title { font-size:16px; font-weight:700; color:#222 }
+        .promo-category { font-size:13px; color:#666; margin-top:6px }
+        .promo-price { color:#d9534f; font-weight:800; margin-top:8px; font-size:18px }
+        .promo-actions { display:flex; justify-content:space-between; align-items:center; margin-top:12px }
+        .vote-btn { padding:8px 12px;border-radius:6px;border:none;background:#007bff;color:white;cursor:pointer;margin-left:6px }
+        .vote-btn.down { background:#6c757d }
+        .promo-score { color:#333; font-weight:700 }
+
+        #notifications > div { background:#fffbe6; border:1px solid #ffe58f; padding:10px; border-radius:6px }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="site-header">
+            <div class="logo">PromoShop</div>
+            <div class="search-bar">
+                <input id="searchInputTop" placeholder="Buscar produtos, promoções ou categorias...">
+                <button id="btnListarTop">Listar</button>
+            </div>
+            <div style="min-width:140px;text-align:right;color:#666">Conta: <strong>guest</strong></div>
+        </div>
         <h1>🎉 Sistema de Promoções - Cliente</h1>
         <p class="info-text">Funcionalidades do cliente: consultar promoções, votar, registrar interesses e receber notificações em tempo real.</p>
 
         <h2>1. Listar Promoções</h2>
         <section>
             <p class="info-text">Visualize todas as promoções disponíveis no sistema.</p>
-            <button id="btnListar">📋 Listar Promoções</button>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+                <button id="btnListar">📋 Listar Promoções</button>
+                <input id="searchInput" type="text" placeholder="Buscar título ou id..." style="flex:1;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                <select id="categoryFilter" style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                    <option value="">Todas as categorias</option>
+                </select>
+            </div>
+            <div id="promotionsList" style="margin-top:15px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
         </section>
 
         <h2>2. Registrar Promoção (Loja)</h2>
@@ -134,20 +190,7 @@
             <button id="btnRegistrar">✅ Registrar Promoção</button>
         </section>
 
-        <h2>3. Votar em Promoção</h2>
-        <section>
-            <p class="info-text">Vote positiva ou negativamente em uma promoção para ajudar no ranking.</p>
-            <label>ID da Promoção
-                <input type="text" id="inputVotoPromoId" placeholder="ex: promo-1">
-            </label>
-            <label>Seu Voto
-                <select id="selectVoto">
-                    <option value="true">👍 Positivo</option>
-                    <option value="false">👎 Negativo</option>
-                </select>
-            </label>
-            <button id="btnVotar">🗳️ Enviar Voto</button>
-        </section>
+        <!-- Voting is available directly on each promotion card -->
 
         <h2>4. Registrar / Cancelar Interesse por Categoria</h2>
         <section>
@@ -162,9 +205,9 @@
             <button id="btnCancelarInteresse">➖ Cancelar Interesse</button>
         </section>
 
-        <h2>📊 Resposta da API</h2>
+        <h2>🔔 Notificações</h2>
         <section>
-            <div id="output">Nenhuma ação executada ainda.</div>
+            <div id="notifications">Nenhuma notificação ainda.</div>
         </section>
     </div>
 
