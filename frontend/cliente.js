@@ -21,6 +21,53 @@ function pushNotification(messageObj){
     if(container) container.prepend(el);
 }
 
+function showLargePromoPopup(notification){
+    const overlay = document.createElement('div');
+    overlay.style.position='fixed';
+    overlay.style.top='0';
+    overlay.style.left='0';
+    overlay.style.width='100%';
+    overlay.style.height='100%';
+    overlay.style.backgroundColor='rgba(0,0,0,0.7)';
+    overlay.style.display='flex';
+    overlay.style.alignItems='center';
+    overlay.style.justifyContent='center';
+    overlay.style.zIndex='9999';
+    overlay.style.animation='fadeIn 0.3s ease-in-out';
+    
+    const modal = document.createElement('div');
+    modal.style.backgroundColor='#fff';
+    modal.style.borderRadius='12px';
+    modal.style.padding='40px';
+    modal.style.maxWidth='600px';
+    modal.style.width='90%';
+    modal.style.boxShadow='0 8px 32px rgba(0,0,0,0.3)';
+    modal.style.textAlign='center';
+    modal.style.animation='slideUp 0.4s ease-out';
+    
+    modal.innerHTML = `
+        <div style="font-size:48px;margin-bottom:20px">🎉</div>
+        <h2 style="color:#d9534f;font-size:32px;margin:0 0 20px 0">${notification.titulo}</h2>
+        <p style="font-size:20px;color:#666;margin-bottom:15px">Categoria: <strong>${notification.categoria}</strong></p>
+        <p style="font-size:18px;color:#333;margin-bottom:25px">Uma promoção que você se interessou acaba de ser criada!</p>
+        <button id="closePopupBtn" style="padding:12px 30px;font-size:16px;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:5px">Fechar</button>
+        <button id="votePopupBtn" style="padding:12px 30px;font-size:16px;background:#28a745;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:5px">👍 Votar</button>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
+    
+    document.getElementById('closePopupBtn').addEventListener('click', ()=>{ overlay.remove(); });
+    document.getElementById('votePopupBtn').addEventListener('click', ()=>{ votarPromocao(notification.id, 'true'); overlay.remove(); });
+}
+
 function renderPromotions(promocoes){
     const container = document.getElementById('promotionsList');
     if(!container) return;
@@ -100,7 +147,7 @@ function clearSessionInterests(){
 }
 
 let lastSeenIds = new Set();
-async function startPolling(intervalMs=5000){ const initial = await listarPromocoes(); initial.forEach(p=> lastSeenIds.add(p.id)); setInterval(async ()=>{ const promos = await listarPromocoes(); const interests = getLocalInterests(); const clientIds = Object.keys(interests); const newPromos = promos.filter(p=>!lastSeenIds.has(p.id)); if(newPromos.length>0){ newPromos.forEach(p=>{ clientIds.forEach(uid=>{ const cats = interests[uid]||[]; if(cats.includes(p.categoria)) pushNotification({mensagem:`Nova promoção em ${p.categoria}: ${p.titulo}`, promocao:p}); }); lastSeenIds.add(p.id); }); } }, intervalMs); }
+async function startPolling(intervalMs=5000){ const initial = await listarPromocoes(); initial.forEach(p=> lastSeenIds.add(p.id)); setInterval(async ()=>{ const promos = await listarPromocoes(); const currentSessionInterests = getSessionInterests(); const newPromos = promos.filter(p=>!lastSeenIds.has(p.id)); if(newPromos.length>0){ newPromos.forEach(p=>{ if(currentSessionInterests.includes(p.categoria)) pushNotification({mensagem:`Nova promoção em ${p.categoria}: ${p.titulo}`, promocao:p}); lastSeenIds.add(p.id); }); } }, intervalMs); }
 
 document.addEventListener('DOMContentLoaded', ()=>{
     const btnListar = document.getElementById('btnListar'); if(btnListar) btnListar.addEventListener('click', listarPromocoes);
@@ -116,6 +163,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
             try{
                 const notification = JSON.parse(event.newValue);
                 if(notification.sessionIds && notification.sessionIds.includes(clientSessionId)){
+                    showLargePromoPopup(notification);
                     pushNotification({mensagem:`Nova promoção em ${notification.categoria}: ${notification.titulo}`, promocao:{id:notification.id,categoria:notification.categoria}});
                 }
             }catch(e){}
