@@ -2,12 +2,12 @@ import json
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-
+import resend
 from core.amqp.connection import get_connection
 from core.amqp.exchange_setup import EXCHANGE_NAME, QUEUE_NAMES, setup_topology
 from core.security.crypto_utils import build_envelope, decrypt_for_component, encrypt_for_target
 
-
+resend.api_key = "re_DUyDn4jz_JKWG4m8583kuFAic36yW6Yw2"
 COMPONENT = "ms-notificacao"
 DB_PATH = Path(__file__).resolve().parent / "db.json"
 
@@ -70,7 +70,18 @@ def handle(channel, body: bytes) -> None:
             "mensagem": f"Nova promocao em {categoria}: {promo['id']} com ranking {promo['ranking']}",
             "promocao": promo,
         }
-        print(f"Enviando alerta de HOT DEAL! para clientes interessados em {categoria}...")
+        print(f"Enviando alerta de HOT DEAL! para a loja, categoria: {categoria}...")
+
+        html = f"<p>Sua promoção <strong>em {categoria} id: {promo.get('id')}</strong>! se tornou HOT DEAL!</p>"
+        r = resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": "williamrodrigues4224@gmail.com",
+            "subject": "Alerta HOT DEAL!",
+            "html": html,
+        })
+
+
+
         publish(
             channel,
             event_type=f"evento.alerta.enviar.{categoria}",
