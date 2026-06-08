@@ -11,6 +11,7 @@ COMPONENTS = [
     "ms-promocao",
     "ms-notificacao",
     "ms-ranking",
+    "loja",
 ]
 
 

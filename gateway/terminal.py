@@ -142,10 +142,21 @@ async def listar_promocoes():
 
 @app.post("/registrar_promocao")
 async def registrar_promocao(body: dict):
-    promo_id = body.get("id")
-    titulo = body.get("titulo")
-    categoria = body.get("categoria")
-    preco = body.get("preco")
+    # Espera um bundle assinado pela loja
+    signed = body.get("signed")
+    if not signed:
+        raise HTTPException(status_code=403, detail="Requisição deve ser assinada pela loja")
+
+    try:
+        signed_payload = decrypt_for_component(signed, "loja")
+    except Exception as exc:
+        raise HTTPException(status_code=403, detail=f"Falha na validação da assinatura: {exc}")
+
+    promo_id = signed_payload.get("id")
+    titulo = signed_payload.get("titulo")
+    categoria = signed_payload.get("categoria")
+    preco = signed_payload.get("preco")
+
     corr = publish_command(
         channel,
         event_type="comando.promocao.registrar",

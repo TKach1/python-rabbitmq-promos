@@ -73,6 +73,23 @@ def main() -> None:
     try:
         run_step(["docker", "compose", "up", "-d", "rabbitmq"], "subir rabbitmq")
         run_step([PYTHON, "scripts/generate_keys.py"], "gerar chaves rsa")
+        # copiar chave privada gerada para o frontend da loja (para testes locais)
+        try:
+            import re
+            loja_priv = REPO_ROOT / "services" / "loja" / "keys" / "private.pem"
+            frontend_loja = REPO_ROOT / "frontend" / "loja.js"
+            if loja_priv.exists() and frontend_loja.exists():
+                pem = loja_priv.read_text()
+                txt = frontend_loja.read_text()
+                pattern = r"const LOJA_PRIVATE_KEY_PEM = `.*?`;"
+                replacement = f"const LOJA_PRIVATE_KEY_PEM = `{pem}`;"
+                new_txt = re.sub(pattern, replacement, txt, count=1, flags=re.DOTALL)
+                frontend_loja.write_text(new_txt)
+                print("[bootstrap] chave privada da loja copiada para frontend/loja.js")
+            else:
+                print("[bootstrap] aviso: arquivo de chave da loja ou frontend/loja.js nao encontrado")
+        except Exception as exc:
+            print(f"[bootstrap] erro ao copiar chave da loja para frontend: {exc}")
     except Exception as exc:
         print(f"[bootstrap] erro: {exc}")
         sys.exit(1)
