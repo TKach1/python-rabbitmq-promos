@@ -3,6 +3,7 @@ EXCHANGE_TYPE = "topic"
 
 QUEUE_NAMES = {
     "gateway": "q_gateway_retorno",
+    "gateway_alertas": "q_gateway_alertas",
     "ms-promocao": "q_ms_promocao",
     "ms-notificacao": "q_ms_notificacao",
     "ms-ranking": "q_ms_ranking",
@@ -38,6 +39,13 @@ def setup_topology(channel) -> None:
         exchange=EXCHANGE_NAME,
         queue=QUEUE_NAMES["ms-notificacao"],
         routing_key="evento.alerta.hot.*",
+    )
+
+    channel.queue_declare(queue=QUEUE_NAMES["gateway_alertas"], durable=True)
+    channel.queue_bind(
+        exchange=EXCHANGE_NAME,
+        queue=QUEUE_NAMES["gateway_alertas"],
+        routing_key="evento.alerta.enviar.*",
     )
 
     channel.queue_declare(queue=QUEUE_NAMES["ms-ranking"], durable=True)

@@ -12,18 +12,6 @@ function pushNotification(message){
     container.prepend(el);
 }
 
-function getInterestedSessions(categoria){
-    try{
-        return JSON.parse(localStorage.getItem(`interestSessions:${categoria}`) || '[]');
-    }catch(e){
-        return [];
-    }
-}
-
-function broadcastPromoNotification(notification){
-    localStorage.setItem('promoNotification', JSON.stringify(notification));
-}
-
 async function registrarPromocaoLoja(){
     const id = document.getElementById('inputPromoIdLoja').value.trim();
     const titulo = document.getElementById('inputPromoTituloLoja').value.trim();
@@ -39,16 +27,6 @@ async function registrarPromocaoLoja(){
             body: JSON.stringify(payloadObj)
         });
         pushNotification('Promoção cadastrada com sucesso');
-        const sessionIds = getInterestedSessions(categoria);
-        if(sessionIds.length>0){
-            broadcastPromoNotification({
-                eventId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                sessionIds,
-                categoria,
-                id,
-                titulo,
-            });
-        }
     }catch(e){ pushNotification('Erro ao enviar promoção para o gateway'); }
 }
 

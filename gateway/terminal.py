@@ -1,9 +1,12 @@
 import json
+import queue
+import threading
 import time
 import uuid
 import sys
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from fastapi.middleware.cors import CORSMiddleware
 from core.amqp.connection import get_connection
@@ -12,6 +15,8 @@ from core.security.crypto_utils import build_envelope, decrypt_for_component, en
 
 COMP = 'gateway'
 channel = None
+sse_clients = {}
+sse_lock = threading.Lock()
 
 def publish_command(channel, event_type: str, payload: dict) -> str:
     correlation_id = str(uuid.uuid4())
@@ -43,6 +48,50 @@ def wait_response(channel, correlation_id: str, timeout_seconds: int = 6):
         time.sleep(0.2)
     return None, {"erro": "Timeout aguardando resposta"}
 
+#Função que empurra o alerta recebido para os clientes SSE conectados
+def broadcast_sse(event_type: str, data: dict):
+    with sse_lock:
+        dead_clients = []
+        for client_id, client_queue in sse_clients.items():
+            try:
+                client_queue.put_nowait((event_type, data))
+            except Exception:
+                dead_clients.append(client_id)
+        for client_id in dead_clients:
+            sse_clients.pop(client_id, None)
+
+
+
+#Aqui o gateway consome os alertas recebidos do ms notificação e faz um broadcast
+#para a fila dos clientes
+
+def consume_alerts(alert_channel):
+    def callback(ch, method, _, body):
+        try:
+            envelope = json.loads(body.decode("utf-8"))
+            event_type = envelope.get("event_type", "")
+            if event_type.startswith("evento.alerta.enviar."):
+                payload = decrypt_for_component(envelope.get("encrypted_payload", ""), envelope.get("origin", ""))
+                categoria = event_type.split(".")[-1]
+                
+                
+                #Quando um alerta de promoção é recebido, faz um broadcast para todos os clientes na fila do SSE
+                broadcast_sse("alerta", {
+                    "categoria": categoria,
+                    "mensagem": payload.get("mensagem", ""),
+                    "promocao": payload.get("promocao", {}),
+                })
+        
+        
+        except Exception as exc:
+            print(f"Erro ao processar alerta SSE: {exc}")
+        finally:
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    alert_channel.basic_qos(prefetch_count=1)
+    alert_channel.basic_consume(queue=QUEUE_NAMES["gateway_alertas"], on_message_callback=callback)
+    alert_channel.start_consuming()
+
 
 #def menu() -> str:
 #    print("\n=== Gateway Promos ===")
@@ -72,6 +121,11 @@ async def startup():
     channel = connection.channel()
     setup_topology(channel)
 
+    alert_connection = get_connection()
+    alert_channel = alert_connection.channel()
+    setup_topology(alert_channel)
+    alert_thread = threading.Thread(target=consume_alerts, args=(alert_channel,), daemon=True)
+    alert_thread.start()
 
 
 @app.get("/listar_promocoes")
@@ -150,6 +204,47 @@ async def cancelar_interesse_categoria(body: dict):
         payload={"usuario_id": usuario_id, "categoria": categoria},
     )
     return {"status": "ok", "usuario_id": usuario_id, "categoria": categoria}
+
+
+
+
+#Gateway recebe alerta AMQP
+#chama broadcast_sse(...)
+#StreamingResponse envia o evento SSE ao front
+#EventSource no browser recebe esse evento.
+
+
+
+
+
+
+@app.get("/subscribe/notificacoes/{client_id}")
+async def subscribe_notificacoes(client_id: str):
+    client_queue = queue.Queue()
+
+    with sse_lock:
+        sse_clients[client_id] = client_queue
+
+    def event_generator():
+        try:
+            while True:
+                try:
+                    event_type, data = client_queue.get(timeout=30)
+                    yield f"event: {event_type}\n"
+                    yield f"data: {json.dumps(data)}\n\n"
+                except queue.Empty:
+                    yield ": keep-alive\n\n"
+        finally:
+            with sse_lock:
+                sse_clients.pop(client_id, None)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 if __name__ == "__main__":

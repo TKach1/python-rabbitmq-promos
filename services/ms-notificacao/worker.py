@@ -27,10 +27,9 @@ def publish(channel, event_type: str, payload: dict, correlation_id: str) -> Non
     envelope = build_envelope(
         event_type=event_type,
         origin=COMPONENT,
-        encrypted_payload="",
+        encrypted_payload=encrypted_payload,
         correlation_id=correlation_id,
     )
-    envelope["payload"] = encrypted_payload
     channel.basic_publish(
         exchange=EXCHANGE_NAME,
         routing_key=event_type,

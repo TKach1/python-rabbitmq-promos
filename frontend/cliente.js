@@ -21,6 +21,32 @@ function pushNotification(messageObj){
     if(container) container.prepend(el);
 }
 
+// Recebe o alerta do SSE, FICA OUVINDO ALERTAS E SE A CATEGORIA FOR DO INTERESSE, EXIBE O POPUP
+
+//gateway/terminal.py define o endpoint @app.get("/subscribe/notificacoes/{client_id}")
+//esse endpoint retorna um objeto StreamingResponse(...)
+//o event_generator() envia os eventos SSE que chegam pelo broadcast_sse(...)
+function connectToSSE(){
+    const eventSource = new EventSource(`${API_URL}/subscribe/notificacoes/${clientSessionId}`);
+    eventSource.addEventListener('alerta', event=>{
+        try{
+            const data = JSON.parse(event.data);
+            const currentInterests = getSessionInterests();
+            if(currentInterests.includes(data.categoria)){
+                showLargePromoPopup(data.promocao ? data.promocao : {id:'', categoria:data.categoria, titulo:data.mensagem});
+                pushNotification({mensagem:`Nova promoção em ${data.categoria}: ${data.promocao?.titulo || data.mensagem}`, promocao:data.promocao || {id:'', categoria:data.categoria}});
+            }
+        }catch(e){
+            console.error('Erro SSE:', e);
+        }
+    });
+    eventSource.onerror = () => {
+        console.warn('SSE desconectado, reconectando...');
+        eventSource.close();
+        setTimeout(connectToSSE, 3000);
+    };
+}
+
 function showLargePromoPopup(notification){
     const overlay = document.createElement('div');
     overlay.style.position='fixed';
@@ -158,21 +184,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const btnRegistrarInteresse = document.getElementById('btnRegistrarInteresse'); if(btnRegistrarInteresse) btnRegistrarInteresse.addEventListener('click', ()=>{ const categoria = document.getElementById('inputCategoria').value.trim(); if(!categoria){ pushNotification({mensagem:'Preencha a categoria', promocao:{id:'',categoria:''}}); return; } registrarInteresse(categoria); });
     const btnCancelarInteresse = document.getElementById('btnCancelarInteresse'); if(btnCancelarInteresse) btnCancelarInteresse.addEventListener('click', ()=>{ const categoria = document.getElementById('inputCategoria').value.trim(); if(!categoria){ pushNotification({mensagem:'Preencha a categoria', promocao:{id:'',categoria:''}}); return; } cancelarInteresse(categoria); });
 
-    window.addEventListener('storage', event=>{
-        if(event.key==='promoNotification' && event.newValue){
-            try{
-                const notification = JSON.parse(event.newValue);
-                if(notification.sessionIds && notification.sessionIds.includes(clientSessionId)){
-                    showLargePromoPopup(notification);
-                    pushNotification({mensagem:`Nova promoção em ${notification.categoria}: ${notification.titulo}`, promocao:{id:notification.id,categoria:notification.categoria}});
-                }
-            }catch(e){}
-        }
-    });
-
     window.addEventListener('beforeunload', ()=>{
         clearSessionInterests();
     });
 
-    (async ()=>{ currentPromos = await listarPromocoes(); startPolling(5000); })();
+    connectToSSE();
+    (async ()=>{ currentPromos = await listarPromocoes(); })();
 });
